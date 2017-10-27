@@ -31,6 +31,10 @@ def generate_project(name, directory, **kwargs):
             templates.render('setup.py.j2', context),
             os.path.join(project_dir, 'setup.py')
     )
+    files.write(
+            'dist\n__pycache__\n*.egg-info\n*.pyc',
+            os.path.join(project_dir, '.gitignore')
+    )
     generate_module(name, project_dir)
 
 def generate_module(name, directory, **kwargs):
