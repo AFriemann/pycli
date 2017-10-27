@@ -1,0 +1,16 @@
+# -*- coding: utf-8 -*-
+"""
+{%- if module %}
+.. module: {{ module }}
+{% if platforms %}  :platform: {{ platforms | join(',') }}{%- endif %}
+{% if synopsis %}   :synopsis: {{ synopsis }}{%- endif %}
+{% endif %}
+
+{% if author %}.. moduleauthor:: {{ author.name }} {{ author.email }}{% endif %}
+"""
+
+
+class {{ name }}(object):
+    pass
+
+# vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4 fenc=utf-8
