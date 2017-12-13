@@ -8,9 +8,10 @@
 """
 
 import os
+import json
 import logging
 
-from pycli import files, templates
+from pycli import files, templates, config
 
 
 logger = logging.getLogger(__name__)
@@ -25,9 +26,18 @@ def generate_project(directory, **kwargs):
 
     files.makedir(project_dir, True)
 
+    generate_pycli_config(name, project_dir, **kwargs)
     generate_project_configs(name, project_dir, **kwargs)
     generate_project_tests(name, project_dir, **kwargs)
     generate_module(name, project_dir, **kwargs)
+
+def generate_pycli_config(name, directory, **kwargs):
+    context = templates.build_context(name, directory, **kwargs)
+
+    config.create(
+        os.path.join(directory, '.pyclirc'),
+        **kwargs.get('author', {})
+    )
 
 def generate_project_configs(name, directory, **kwargs):
     context = templates.build_context(name, directory, **kwargs)

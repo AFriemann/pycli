@@ -16,6 +16,7 @@ def makedir(path, exist_ok=False):
     except TypeError:
         os.makedirs(path)
 
+
 def write(data, path):
     with open(path, 'wb') as stream:
         stream.write(data.encode())

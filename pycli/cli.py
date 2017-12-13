@@ -45,9 +45,16 @@ def root(ctx, configfile):
 
     ctx.obj = config.load(configfile)
 
-@root.group()
+    project_config = config.find(os.getcwd())
+
+    if project_config is not None:
+        ctx.obj.update(**config.load(project_config))
+
+
+@root.command(cls=AliasedGroup)
 def generate():
     pass
+
 
 @generate.command(name='project')
 @click.option('--keyword', '-k', multiple=True)
@@ -60,6 +67,7 @@ def gen_project(ctx, keyword, platform, directory):
         keywords=keyword, platforms=platform, **dict(ctx.obj)
     )
 
+
 @generate.command(name='module')
 @click.argument('name')
 @click.argument('directory', default=os.getcwd(), type=click.Path())
@@ -69,6 +77,7 @@ def gen_module(ctx, name, directory):
         name, directory,
         **dict(ctx.obj)
     )
+
 
 @generate.command(name='class')
 @click.argument('name')
