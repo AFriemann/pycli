@@ -19,6 +19,6 @@ def makedir(path, exist_ok=False):
 
 def write(data, path):
     with open(path, 'wb') as stream:
-        stream.write(data.encode())
+        stream.write(data.encode().rstrip())
 
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4 fenc=utf-8
