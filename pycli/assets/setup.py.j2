@@ -25,20 +25,21 @@ REQUIREMENTS = [str(ir.req) for ir in INSTALL_REQS if ir is not None]
 if not __version__ or __version__ == '<VERSION>':
     raise RuntimeError("Package version not set!")
 
-setup(name             = "{{ name }}",
-      author           = "{{ author.name }}",
-      author_email     = "{{ author.email }}",
-      description      = "{{ synopsis }}",
-      url              = "{{ url }}",
-      download_url     = "{{ download_url }}",
-      keywords         = [{{ keywords | join(',') }}],
-      version          = __version__,
-      license          = read('LICENSE.txt'),
-      long_description = read('README.rst'),
-      install_requires = REQUIREMENTS
-      classifiers      = [],
-      packages         = find_packages(exclude=('test*', 'assets')),
-      platforms        = [{{ platforms | join(',') }}]
+setup(
+    name="{{ name }}",
+    author="{{ author.name }}",
+    author_email="{{ author.email }}",
+    description="{{ description }}",
+    url="{{ url }}",
+    download_url="{{ download_url }}",
+    keywords=[{{ keywords | join(',') }}],
+    version=__version__,
+    license=read('LICENSE.txt'),
+    long_description=read('README.rst'),
+    install_requires=REQUIREMENTS,
+    classifiers=[],
+    packages=find_packages(exclude=('test*', 'assets')),
+    platforms=[{{ platforms | join(',') }}]
 )
 
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4 fenc=utf-8
