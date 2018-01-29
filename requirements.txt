@@ -1,5 +1,5 @@
 click
 Jinja2
-simple_model
-simple_tools
+simple_model>=1.2.2
+simple_tools>=0.1.0
 inflection

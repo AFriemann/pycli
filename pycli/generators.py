@@ -8,140 +8,163 @@
 """
 
 import os
+import json
 import logging
 import inflection
 
-from pycli import files, templates, config
+from simple_tools import interaction
+
+from pycli import model
 
 
 logger = logging.getLogger(__name__)
 
 
+def build_context(name, directory, **kwargs):
+    context = {}
+    context.update(name=name, directory=directory, **kwargs)
+
+    return context
+
+
 def generate_project(directory, **kwargs):
     project_dir = os.path.abspath(directory)
-    name = os.path.basename(os.path.abspath(directory))
+    name = os.path.basename(project_dir)
 
-    logger.info('creating project %s in %s', name, project_dir)
+    kwargs['author'].update(
+        name=interaction.collect('Author Name', kwargs['author'].get('name')),
+        email=interaction.collect('Author eMail', kwargs['author'].get('email')),
+    )
 
-    # context = templates.build_context(name, project_dir, **kwargs)
+    yield model.Directory(path=project_dir)
 
-    files.makedir(project_dir, True)
-
-    generate_pycli_config(name, project_dir, **kwargs)
-    generate_project_configs(name, project_dir, **kwargs)
-    generate_project_tests(name, project_dir, **kwargs)
-    generate_module(name, project_dir, **kwargs)
+    yield from generate_pycli_config(name, project_dir, **kwargs)
+    yield from generate_project_configs(name, project_dir, **kwargs)
+    yield from generate_project_tests(name, project_dir, **kwargs)
+    yield from generate_project_makefile(name, project_dir, **kwargs)
+    yield from generate_module(name, project_dir, version='0.0.0', **kwargs)
 
 
 def generate_pycli_config(name, directory, **kwargs):
-    # context = templates.build_context(name, directory, **kwargs)
+    config = model.ProjectConfig(**kwargs)
 
-    config.create(
-        os.path.join(directory, '.pyclirc'),
-        **kwargs.get('author', {})
+    yield model.File(
+        path=os.path.join(directory, '.pyclirc'),
+        content=json.dumps(dict(config)),
+    )
+
+
+def generate_project_makefile(name, directory, **kwargs):
+    context = build_context(
+        inflection.titleize(name),
+        directory,
+        module_name=inflection.underscore(name),
+        **kwargs
+    )
+
+    yield model.File(
+        path=os.path.join(directory, 'Makefile'),
+        template='Makefile.j2',
+        context=context,
     )
 
 
 def generate_project_configs(name, directory, **kwargs):
-    context = templates.build_context(inflection.underscore(name), directory, **kwargs)
+    context = build_context(inflection.underscore(name), directory, **kwargs)
 
-    logger.info('creating config files for project %s in %s', name, directory)
+    yield from generate_license(name, directory, **kwargs)
+    yield from generate_readme(name, directory, **kwargs)
 
-    generate_license(name, directory, **kwargs)
-    generate_readme(name, directory, **kwargs)
+    yield model.File(
+        path=os.path.join(directory, '.gitignore'),
+        content='dist\n__pycache__\n*.egg-info\n*.pyc\n.tox\n.pyclirc',
+    )
 
-    files.write(
-        'dist\n__pycache__\n*.egg-info\n*.pyc',
-        os.path.join(directory, '.gitignore')
+    yield model.File(
+        path=os.path.join(directory, 'setup.py'),
+        template='setup.py.j2',
+        context=context
     )
-    files.write(
-        templates.render('setup.py.j2', context),
-        os.path.join(directory, 'setup.py')
+
+    yield model.File(
+        path=os.path.join(directory, 'setup.cfg'),
+        template='setup.cfg.j2',
+        context=context
     )
-    files.write(
-        templates.render('setup.cfg.j2', context),
-        os.path.join(directory, 'setup.cfg')
+
+    yield model.File(
+        path=os.path.join(directory, 'requirements.txt')
     )
-    files.write(
-        '',
-        os.path.join(directory, 'requirements.txt')
-    )
-    files.write(
-        'include *.rst *.txt *.md',
-        os.path.join(directory, 'MANIFEST.in')
+
+    yield model.File(
+        path=os.path.join(directory, 'MANIFEST.in'),
+        content='include *.rst *.txt *.md',
     )
 
 
 def generate_readme(name, directory, **kwargs):
-    context = templates.build_context(inflection.humanize(name), directory, **kwargs)
+    context = build_context(
+        inflection.titleize(name),
+        directory,
+        module_name=inflection.underscore(name),
+        **kwargs
+    )
 
-    logger.info('creating readme file for project %s in %s', name, directory)
-
-    files.write(
-        templates.render('README.rst.j2', context),
-        os.path.join(directory, 'README.rst')
+    yield model.File(
+        path=os.path.join(directory, 'README.rst'),
+        template='README.rst.j2',
+        context=context,
     )
 
 
 def generate_license(name, directory, **kwargs):
-    # context = templates.build_context(name, directory, **kwargs)
-
-    logger.info('creating license file for project %s in %s', name, directory)
-
-    files.write(
-        '',
-        os.path.join(directory, 'LICENSE.txt')
+    yield model.File(
+        path=os.path.join(directory, 'LICENSE.txt')
     )
 
 
 def generate_project_tests(name, directory, **kwargs):
-    context = templates.build_context(inflection.underscore(name), directory, **kwargs)
+    context = build_context(inflection.underscore(name), directory, **kwargs)
+
     test_dir = os.path.join(directory, 'tests')
 
-    logger.info('creating test files for project %s in %s', name, directory)
-
-    files.write(
-        templates.render('tox.ini.j2', context),
-        os.path.join(directory, 'tox.ini')
+    yield model.File(
+        path=os.path.join(directory, 'tox.ini'),
+        template='tox.ini.j2',
+        context=context,
     )
-    files.write(
-        templates.render('coverage.cfg.j2', context),
-        os.path.join(directory, 'coverage.cfg')
-    )
-
-    files.makedir(test_dir, True)
-    files.write(
-        '',
-        os.path.join(test_dir, '__init__.py')
+    yield model.File(
+        path=os.path.join(directory, 'coverage.cfg'),
+        template='coverage.cfg.j2',
+        context=context,
     )
 
+    yield model.Directory(path=test_dir)
 
-def generate_module(name, directory, **kwargs):
-    # context = templates.build_context(name, directory, **kwargs)
+    yield model.File(
+        path=os.path.join(test_dir, '__init__.py'),
+    )
+
+
+def generate_module(name, directory, version=None, **kwargs):
     path = os.path.join(directory, inflection.underscore(name))
 
-    logger.info('creating module %s in %s', name, path)
+    yield model.Directory(path=path)
 
-    if os.path.exists(path):
-        raise RuntimeError('File exists: {}'.format(path))
-
-    files.makedir(path, True)
-    files.write("__version__ = '0.0.0'", os.path.join(path, '__init__.py'))
+    yield model.File(
+        path=os.path.join(path, '__init__.py'),
+        content="__version__ = '%s'" % version if version is not None else '',
+    )
 
 
 def generate_class(name, directory, **kwargs):
-    context = templates.build_context(inflection.camelize(name), directory, **kwargs)
-
-    logger.info('creating class %s in %s', name, directory)
-
     path = os.path.join(directory, '{}.py'.format(inflection.underscore(name)))
+    context = build_context(inflection.camelize(name), directory, **kwargs)
 
-    if os.path.exists(path):
-        raise RuntimeError('File exists: {}'.format(path))
-
-    files.write(
-        templates.render('class.py.j2', context),
-        path
+    yield model.File(
+        path=path,
+        template='class.py.j2',
+        context=context,
     )
 
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4 fenc=utf-8

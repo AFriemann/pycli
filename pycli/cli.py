@@ -35,8 +35,10 @@ def check_requirements():
         raise RuntimeError('PyCli needs git installed!')
 
 
-@click.group()
-@click.option('--configfile', '-c', type=click.Path(dir_okay=False), default=os.path.expanduser('~/.config/pycli/config.json'))
+@click.command(cls=AliasedGroup)
+@click.option('--configfile', '-c',
+              type=click.Path(dir_okay=False),
+              default=os.path.expanduser('~/.config/pycli/config.json'))
 @click.pass_context
 def root(ctx, configfile):
     logging.basicConfig(level=logging.INFO)
@@ -45,27 +47,41 @@ def root(ctx, configfile):
 
     ctx.obj = config.load(configfile)
 
-    project_config = config.find(os.getcwd())
+    next_config = config.find(os.getcwd())
 
-    if project_config is not None:
-        ctx.obj.update(**config.load(project_config))
+    if next_config is not None:
+        ctx.obj.update(**config.load(next_config))
+
+
+@root.command()
+@click.option('--keyword', '-k', multiple=True)
+@click.option('--platform', '-p', multiple=True)
+@click.option('--description', '-d')
+@click.option('--url', '-u')
+@click.option('--download-url')
+@click.argument('directory', default=os.getcwd(), type=click.Path())
+@click.pass_context
+def new(ctx, keyword, platform, description, url, download_url, directory):
+    project_files = generators.generate_project(
+        directory,
+        keywords=keyword,
+        platforms=platform,
+        **dict(ctx.obj)
+    )
+
+    for obj in project_files:
+        obj.create()
 
 
 @root.command(cls=AliasedGroup)
-def generate():
+@click.pass_context
+def generate(ctx):
     pass
 
-
-@generate.command(name='project')
-@click.option('--keyword', '-k', multiple=True)
-@click.option('--platform', '-p', multiple=True)
-@click.argument('directory', default=os.getcwd(), type=click.Path())
-@click.pass_context
-def gen_project(ctx, keyword, platform, directory):
-    generators.generate_project(
-        directory,
-        keywords=keyword, platforms=platform, **dict(ctx.obj)
-    )
+    # project_config = config.find(os.getcwd())
+    #
+    # if project_config is not None:
+    #     ctx.obj.update(**config.load(project_config))
 
 
 @generate.command(name='module')
@@ -73,10 +89,8 @@ def gen_project(ctx, keyword, platform, directory):
 @click.argument('directory', default=os.getcwd(), type=click.Path())
 @click.pass_context
 def gen_module(ctx, name, directory):
-    generators.generate_module(
-        name, directory,
-        **dict(ctx.obj)
-    )
+    for obj in generators.generate_module(name, directory, **dict(ctx.obj)):
+        obj.create()
 
 
 @generate.command(name='class')
@@ -84,9 +98,7 @@ def gen_module(ctx, name, directory):
 @click.argument('directory', default=os.getcwd(), type=click.Path())
 @click.pass_context
 def gen_class(ctx, name, directory):
-    generators.generate_class(
-        name, directory,
-        **dict(ctx.obj)
-    )
+    for obj in generators.generate_class(name, directory, **dict(ctx.obj)):
+        obj.create()
 
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4 fenc=utf-8
