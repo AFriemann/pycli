@@ -9,7 +9,6 @@
 """
 
 import os
-import pip
 
 try:
     from setuptools import setup, find_packages
@@ -24,15 +23,16 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname), 'r').read()
 
 
-INSTALL_REQS = pip.req.parse_requirements(
-    'requirements.txt',
-    session=pip.download.PipSession()
-)
-
-REQUIREMENTS = [str(ir.req) for ir in INSTALL_REQS if ir is not None]
-
 if not __version__ or __version__ == '<VERSION>':
     raise RuntimeError("Package version not set!")
+
+requirements = [
+    "click",
+    "Jinja2",
+    "simple_model>=1.2.2",
+    "simple_tools>=0.1.0",
+    "inflection",
+]
 
 setup(name="pycli",
       author="Aljosha Friemann",
@@ -42,7 +42,7 @@ setup(name="pycli",
       version=__version__,
       license=read('LICENSE.txt'),
       long_description=read('README.rst'),
-      install_requires=REQUIREMENTS,
+      install_requires=requirements,
       classifiers=[],
       packages=find_packages(exclude=('tests', 'assets')),
       entry_points={ 'console_scripts': ['pycli=pycli.cli:root'] },

@@ -93,7 +93,8 @@ def generate_project_configs(name, directory, **kwargs):
     )
 
     yield model.File(
-        path=os.path.join(directory, 'requirements.txt')
+        path=os.path.join(directory, 'requirements.txt'),
+        content='.'
     )
 
     yield model.File(
